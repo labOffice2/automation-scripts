@@ -35,12 +35,22 @@ public class logictest : AScript
 
 	public override void Work()
 	{
-		DataLoggerMeas G = new DataLoggerMeas(DMMMode.Vdc,Gch);
+		DataLoggerMeas G = new DataLoggerMeas(DMMMode.Vac,Gch);
+		DataLoggerMeas Y1 = new DataLoggerMeas(DMMMode.Vac,Y1ch);
+		DataLoggerMeas Y2 = new DataLoggerMeas(DMMMode.Vdc,Y2ch);
+		DataLoggerMeas W1 = new DataLoggerMeas(DMMMode.Vdc,W1ch);
+		DataLoggerMeas W2 = new DataLoggerMeas(DMMMode.Vdc,W2ch);
+		DataLoggerMeas W3 = new DataLoggerMeas(DMMMode.Vdc,W3ch);
+		DataLoggerMeas OB = new DataLoggerMeas(DMMMode.Vdc,OBch);
+		DataLoggerMeas E = new DataLoggerMeas(DMMMode.Vdc,Ech);
 		
 		addMeasures();
 		
-		keithley.device.SetMeasurements("101,G terminal");
+		keithley.device.SetMeasurements( "101, G \n102, Y1 \n103, Y2\n104, W1");
+		//keithley.device.SetMeasurements("101,G terminal");
 		keithley.device.SetChannelMode(G);
+		keithley.device.SetChannelMode(Y1);
+		Gui.WaitForContinueButton();
 		keithley.device.Run();
 		
 		myTable = sheet.AddTable("thermostat outputs","Time","G","Y1","Y2","W1","W2","W3","OB","E");
@@ -68,7 +78,7 @@ public class logictest : AScript
 			//Gui.Write("channel "+m.ToString()+" = "+keithley.device.GetImmediateMeas(DMMMode.Vdc,m).ToString());	
 			//measures[m] = (float)keithley.device.GetImmediateMeas(DMMMode.Vdc,m);
 			//Gui.Write("mode: "+keithley.device.Mode.ToString());
-			Gui.Write( keithley.device.Mode.ToString());
+			//Gui.Write( keithley.device.Mode.ToString());
 			DaqCollectionDictionary X = keithley.device.CollectMeasurements(500);
 			foreach(var item in X)
 				foreach(var val in item.Value)
