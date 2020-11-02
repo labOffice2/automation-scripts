@@ -16,17 +16,27 @@ public class ReadZES : AScript
     Param<int> channel = new Param<int>("channel",1,"the measured channel");
     Param<float> testingPeriod = new Param<float>("tets period", 5);
     
+    int sampleNum = 1;    
+    string bCol;
+    string cCol;
+    string dCol;
+    string eCol;
+    
 
     public void Startup()
     {
         sheet.AddTable("%Time%");
-		PowerAnalyzerMeas activePower = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.ActivePower,channel);	
-		PowerAnalyzerMeas powerFactor = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.PowerFactor,channel);	
+		PowerAnalyzerMeas activePower = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.ActivePower,channel);
+		bCol = "active power";		
+		PowerAnalyzerMeas powerFactor = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.PowerFactor,channel);
+		cCol = "power factor";		
 		PowerAnalyzerMeas voltageTHD = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.VoltageTHD,channel);	
+		dCol = "voltageTHD";
 		PowerAnalyzerMeas voltageAC = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.Vac,channel);	
+		eCol = "voltageAC";
 		
 		PowerAnalyzerMeas[] myMeasures = new PowerAnalyzerMeas[]{activePower,powerFactor,voltageTHD,voltageAC};
-		string[] myMeasuresNames = new string[] {"activePower","powerFactor","voltageTHD","voltageAC"};
+		string[] myMeasuresNames = new string[] {bCol,cCol,dCol,eCol};
 		
 		zes.device.SetMeasurementsDefinitions(myMeasuresNames,myMeasures);
 		zes.device.Cycle = 500;
@@ -48,6 +58,8 @@ public class ReadZES : AScript
 
         	Gui.Write(string.Join("\t", zes.device.LastMeasurements.Values));
         	
+        	sampleNum++;
+        	
         }
         
         Finally();
@@ -55,6 +67,8 @@ public class ReadZES : AScript
 
     public void Finally()
     {
+    	sheet[ eCol ] = new ResultCell( new ResultFormula("=SLOPE(B2:B"+sampleNum+",A2:A"+sampleNum+")/24")); // because the slope will be calculated per day and we need per hour
+    	sheet[ eCol ] = new ResultCell(new ResultFormula("=AVERAGE(B2:B"+sampleNum+")"));
         zes.device.Stop();
     }
     
