@@ -1,0 +1,121 @@
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using ResultsProccessor;
+using AutomationDrivers;
+using AutomationTools;
+using AutomationConsole;
+using AutomationConsole.Scripts;
+
+public class logictest : AScript
+{
+	AKeithley keithley;
+	
+	private int Gch = 101;
+	private int Y1ch = 102;	
+	private int Y2ch = 103;
+	private int W1ch = 104;
+	private int W2ch = 105;	
+	private int W3ch = 106;
+	private int OBch = 107;
+	private int Ech = 108;
+	
+	public Dictionary<int, float> measures = new Dictionary<int, float>(); 
+	public Dictionary<int, string> columns = new Dictionary<int, string>();
+	public TableStream myTable;
+	
+	
+	
+	public logictest()
+	{
+		
+		// Add controls to gui, initializations
+	}
+
+	public override void Work()
+	{
+		DataLoggerMeas G = new DataLoggerMeas(DMMMode.Vdc,Gch);
+		
+		addMeasures();
+		
+		keithley.device.SetMeasurements("101,G terminal");
+		keithley.device.SetChannelMode(G);
+		keithley.device.Run();
+		
+		myTable = sheet.AddTable("thermostat outputs","Time","G","Y1","Y2","W1","W2","W3","OB","E");
+		
+		while(true)
+		{
+			sample();
+			document();
+		}
+		
+	}
+
+	public override void Finally()
+	{
+		sheet.Save();
+		// called by the end of work no matter how ended
+	}
+	
+
+	
+	public void sample()
+	{
+		foreach(var m in measures.Keys)
+		{
+			//Gui.Write("channel "+m.ToString()+" = "+keithley.device.GetImmediateMeas(DMMMode.Vdc,m).ToString());	
+			//measures[m] = (float)keithley.device.GetImmediateMeas(DMMMode.Vdc,m);
+			//Gui.Write("mode: "+keithley.device.Mode.ToString());
+			Gui.Write( keithley.device.Mode.ToString());
+			DaqCollectionDictionary X = keithley.device.CollectMeasurements(500);
+			foreach(var item in X)
+				foreach(var val in item.Value)
+            		Gui.Write("key: "+item.Key +" value: "+val );
+
+			//float measure = keithley.device.GetImmediateMeas(DMMMode.Vdc,101);
+		}
+	
+	}
+	
+	public void document()
+	{
+		myTable["Time"] = DateTime.Now;
+		foreach(var m in measures.Keys)
+		{
+			myTable[columns[m]] = measures[m];
+		}
+	
+	}
+	
+	
+	
+	public void addMeasures()
+	{
+		measures.Add(Gch,0);
+		columns.Add(Gch,"G");
+		
+		measures.Add(Y1ch,0);
+		columns.Add(Y1ch,"Y1");
+		
+		measures.Add(Y2ch,0);
+		columns.Add(Y2ch,"Y2");
+		
+		measures.Add(W1ch,0);
+		columns.Add(W1ch,"W1");
+		
+		measures.Add(W2ch,0);
+		columns.Add(W2ch,"W2");
+		
+		measures.Add(W3ch,0);
+		columns.Add(W3ch,"W3");
+		
+		measures.Add(OBch,0);
+		columns.Add(OBch,"OB");
+		
+		measures.Add(Ech,0);
+		columns.Add(Ech,"E");
+		
+	}
+}

@@ -1,0 +1,72 @@
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Windows.Media;
+using ResultsProccessor;
+using AutomationDrivers;
+using AutomationTools;
+using AutomationConsole;
+using AutomationConsole.Scripts;
+
+public class ReadZES : AScript
+{
+    public AZES zes;
+    
+    Param<int> channel = new Param<int>("channel",1,"the measured channel");
+    Param<float> testingPeriod = new Param<float>("tets period", 5);
+    
+
+    public void Startup()
+    {
+        sheet.AddTable("%Time%");
+		PowerAnalyzerMeas activePower = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.ActivePower,channel);	
+		PowerAnalyzerMeas powerFactor = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.PowerFactor,channel);	
+		PowerAnalyzerMeas voltageTHD = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.VoltageTHD,channel);	
+		PowerAnalyzerMeas voltageAC = new PowerAnalyzerMeas(PowerAnalyzerMeasEnum.Vac,channel);	
+		
+		PowerAnalyzerMeas[] myMeasures = new PowerAnalyzerMeas[]{activePower,powerFactor,voltageTHD,voltageAC};
+		string[] myMeasuresNames = new string[] {"activePower","powerFactor","voltageTHD","voltageAC"};
+		
+		zes.device.SetMeasurementsDefinitions(myMeasuresNames,myMeasures);
+		zes.device.Cycle = 500;
+        zes.device.Run(); // you must call run before getting LastMeasurement
+        Gui.Write("Measuring: " + string.Join("\t", zes.device.MeasurementsNames), Brushes.CadetBlue);
+    }
+
+    public override void Work()
+    {
+    	Startup();
+    	
+    	DateTime beginning = DateTime.Now;
+    	while(!testEnded(DateTime.Now.Subtract(beginning)))
+    	{
+        	zes.device.ReceivedMeasurementEvent.WaitOne(); // Waiting for zes to send new measurement
+
+        	foreach (KeyValuePair<string, float> kvp in zes.device.LastMeasurements)
+            	sheet[kvp.Key] = kvp.Value;
+
+        	Gui.Write(string.Join("\t", zes.device.LastMeasurements.Values));
+        	
+        }
+        
+        Finally();
+    }
+
+    public void Finally()
+    {
+        zes.device.Stop();
+    }
+    
+    public bool testEnded(TimeSpan elapsed)
+	{
+		if(elapsed.TotalMinutes > testingPeriod) 
+			return true;
+		
+		return false;
+	}
+    
+    
+    
+    
+}
